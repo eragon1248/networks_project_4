@@ -136,9 +136,9 @@ class Sender:
         self.cwnd = packet_size
         self.RTT_AVG = None
         self.RTT_VAR = None
-        self.RTO = 10  # Initial RTO value in seconds
-        self.alpha = 1/64  # EWMA smoothing factor
-        self.beta = 1/4    # For RTT variance estimation
+        self.RTO = .1  # Initial RTO value in seconds
+        self.alpha = 1/64
+        self.beta = 1/4 
         self.send_times = {}  # Maps packet_id to send timestamp
 
         for i in range((data_len//payload_size)+1):
@@ -198,7 +198,7 @@ class Sender:
             # Update RTO
             self.RTO = self.RTT_AVG + 4 * self.RTT_VAR
             # Ensure minimum RTO
-            self.RTO = max(self.RTO, 0.1)
+            #self.RTO = max(self.RTO, 0.1)
         # Perform additive increase
         self.cwnd += (packet_size * packet_size) / self.cwnd
 
@@ -229,7 +229,7 @@ class Sender:
                 self.status[seq_range]=3
                 total_to_ret+=min(seq_range[1],self.data_len)-seq_range[0]
         
-        #print(f'Cwnd:{self.cwnd}, RTO:{self.RTO}')
+        print(f'Cwnd:{self.cwnd}, RTO:{self.RTO}')
         return total_to_ret
 
     def send(self, packet_id: int) -> Optional[Tuple[int, int]]:
