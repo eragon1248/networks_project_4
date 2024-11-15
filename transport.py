@@ -74,7 +74,6 @@ class Receiver:
         '''
 
         # TODO
-        print('finished')
         pass
 
     # Combine intervals for ranges
@@ -184,7 +183,7 @@ class Sender:
         self.status[acked_range]=2
         self.num_acked+=1
         total_to_ret+=min(acked_range[1],self.data_len)-acked_range[0]
-        print(f"TOTAL_TO_RET:{total_to_ret}")
+        #print(f"TOTAL_TO_RET:{total_to_ret}")
         sacks.append((0,0))
         sacks.append(((self.data_len//payload_size)*payload_size, self.data_len))
 
@@ -246,9 +245,9 @@ class Sender:
         '''
 
         # TODO
-        print("Sent vs Acked")
-        print(self.num_sent)
-        print(self.num_acked)
+        #print("Sent vs Acked")
+        #print(self.num_sent)
+        #print(self.num_acked)
         
         if self.num_sent==self.data_len//payload_size+1 and self.num_acked==self.num_sent:
             return None
