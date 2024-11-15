@@ -159,8 +159,6 @@ class Sender:
                 # self.num_sent=0
                 self.status[r] = 3
                 self.dupacks[r]=0
-        # Perform multiplicative decrease
-        self.cwnd = max(self.cwnd / 2, packet_size)
 
     def ack_packet(self, sacks: List[Tuple[int, int]], packet_id: int) -> int:
         '''Called every time we get an acknowledgment. The argument is a list
@@ -178,7 +176,7 @@ class Sender:
         # deal with acknowledgments
         total_to_ret = 0
         acked_range = self.packet_ids[packet_id]
-        if self.status[acked_range]!=1:
+        if acked_range is None or self.status[acked_range]!=1:
             return 0
         self.status[acked_range]=2
         self.num_acked+=1
@@ -223,14 +221,16 @@ class Sender:
         current_time = time.time()
         for packet_id, send_time in list(self.send_times.items()):
             seq_range = self.packet_ids[packet_id]
-            if self.status[cur_range]==1 and current_time - send_time >= self.RTO:
-                self.dupacks[cur_range]=0
-                self.status[cur_range]=3
-                total_to_ret+=min(cur_range[1],self.data_len)-cur_range[0]
-                del self.send_times[packet_id]
+            #print(seq_range)
+            if seq_range!=(0, 0) and self.status[seq_range]==1 and current_time - send_time >= self.RTO:
+                # Perform multiplicative decrease
+                self.cwnd = max(self.cwnd / 2, packet_size)
+                self.dupacks[seq_range]=0
+                self.status[seq_range]=3
+                total_to_ret+=min(seq_range[1],self.data_len)-seq_range[0]
+        
+        #print(f'Cwnd:{self.cwnd}, RTO:{self.RTO}')
         return total_to_ret
-            
-        # determine dropped?
 
     def send(self, packet_id: int) -> Optional[Tuple[int, int]]:
         '''Called just before we are going to send a data packet. Should
@@ -245,14 +245,10 @@ class Sender:
         '''
 
         # TODO
-        #print("Sent vs Acked")
-        #print(self.num_sent)
-        #print(self.num_acked)
+        print(f"Sent:{self.num_sent} vs Acked:{self.num_acked}")
         
         if self.num_sent==self.data_len//payload_size+1 and self.num_acked==self.num_sent:
             return None
-        # if self.num_sent==self.data_len//payload_size+1:
-        #     return (0,0)
         range_to_send = (0,0)
         #print(self.status)
         for r in sorted(self.status):
@@ -265,14 +261,13 @@ class Sender:
                 self.status.update({r:1})
                 self.num_sent+=1
                 break
-            
         #print(range_to_send)
         self.packet_ids.update({packet_id:range_to_send})
         self.send_times[packet_id] = time.time()
         return range_to_send
 
     def get_cwnd(self) -> int:
-        return self.cwnd
+        return int(self.cwnd)
 
     def get_rto(self) -> float:
         return self.RTO
